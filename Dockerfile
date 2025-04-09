@@ -2,19 +2,27 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
+# Install dependencies needed for bcrypt
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    libffi-dev
+
 # Install Poetry
 RUN pip install poetry==1.5.1
 
-# Copy only requirements to cache them in docker layer
-COPY pyproject.toml poetry.lock* /app/
+# Copy project files to cache dependencies
+COPY pyproject.toml poetry.lock* README.md /app/
+COPY camera_collector /app/camera_collector/
 
 # Configure poetry to not use a virtual environment
 RUN poetry config virtualenvs.create false
 
 # Install dependencies
-RUN poetry install --no-dev --no-interaction --no-ansi
+RUN poetry install --only main --no-interaction --no-ansi
 
-# Copy project
+# Copy the rest of the project
 COPY . /app/
 
 # Run the application

@@ -2,24 +2,29 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# Install Poetry and test dependencies
-RUN pip install poetry==1.5.1 && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends gcc python3-dev libffi-dev g++ && \
+# Install dependencies needed for bcrypt and testing
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    libffi-dev \
+    g++ && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+# Install Poetry
+RUN pip install poetry==1.5.1
+
+# Copy project files
+COPY pyproject.toml poetry.lock* README.md /app/
+COPY camera_collector /app/camera_collector/
+COPY tests /app/tests/
 
 # Don't use virtual environment in Docker
 RUN poetry config virtualenvs.create false
 
-# Copy poetry configuration files
-COPY pyproject.toml poetry.lock* /app/
-
-# Install dependencies including test dependencies
+# Install all dependencies including test dependencies
 RUN poetry install --no-interaction --no-ansi
-
-# Install bcrypt explicitly for password hashing tests
-RUN pip install bcrypt
 
 # Copy the rest of the application
 COPY . /app/

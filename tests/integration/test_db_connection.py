@@ -22,7 +22,6 @@ class TestDatabaseConnection:
         yield client
         client.close()
     
-    @pytest.mark.skipif("not config.getoption('mongodb_available')")
     async def test_database_connection(self, mongodb_client, mongodb_available):
         """Test that we can connect to the database."""
         # Skip this test if MongoDB is not available
@@ -47,14 +46,18 @@ class TestDatabaseConnection:
         # Clean up
         await test_collection.delete_many({})
     
-    async def test_collection_operations(self, mongodb, mongodb_available):
+    async def test_collection_operations(self, mongodb_client, mongodb_available):
         """Test basic collection operations."""
         # Skip this test if MongoDB is not available
         if not mongodb_available:
             pytest.skip("MongoDB is not available")
             
+        # Get the test database
+        mongo_db = os.environ.get("MONGODB_TEST_DB", settings.MONGODB_TEST_DB)
+        db = mongodb_client[mongo_db]
+            
         # Insert a document
-        await mongodb.cameras.insert_one({
+        await db.cameras.insert_one({
             "brand": "Test Brand",
             "model": "Test Model",
             "year_manufactured": 2020,
@@ -64,23 +67,23 @@ class TestDatabaseConnection:
         })
         
         # Find the document
-        result = await mongodb.cameras.find_one({"brand": "Test Brand"})
+        result = await db.cameras.find_one({"brand": "Test Brand"})
         assert result is not None
         assert result["model"] == "Test Model"
         
         # Update the document
-        await mongodb.cameras.update_one(
+        await db.cameras.update_one(
             {"brand": "Test Brand"},
             {"$set": {"condition": "mint"}}
         )
         
         # Verify the update
-        updated = await mongodb.cameras.find_one({"brand": "Test Brand"})
+        updated = await db.cameras.find_one({"brand": "Test Brand"})
         assert updated["condition"] == "mint"
         
         # Delete the document
-        await mongodb.cameras.delete_one({"brand": "Test Brand"})
+        await db.cameras.delete_one({"brand": "Test Brand"})
         
         # Verify deletion
-        deleted = await mongodb.cameras.find_one({"brand": "Test Brand"})
+        deleted = await db.cameras.find_one({"brand": "Test Brand"})
         assert deleted is None

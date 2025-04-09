@@ -32,14 +32,19 @@ else:
     print("MongoDB not available, using mocks")
 
 
-# Define pytest hook to add mongodb_available option
+# Define pytest hooks
 def pytest_addoption(parser):
+    """Add command-line options to pytest."""
     parser.addoption(
-        "--mongodb_available",
+        "--with-mongodb",
         action="store_true",
-        default=USE_REAL_MONGODB,
-        help="Run tests that require MongoDB"
+        default=False,
+        help="Run tests with a real MongoDB instance"
     )
+
+def pytest_configure(config):
+    """Register markers."""
+    config.addinivalue_line("markers", "mongodb: mark test as requiring MongoDB")
 
 
 @pytest.fixture(scope="session")
@@ -87,7 +92,7 @@ async def mongodb():
     client.close()
 
 
-@pytest.fixture
+@pytest.fixture(scope="class")
 def mongodb_available() -> bool:
     """
     Fixture to check if MongoDB is available.
