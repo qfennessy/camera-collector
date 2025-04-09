@@ -19,7 +19,11 @@ fi
 # Create reports directory if it doesn't exist
 mkdir -p reports
 
-# Build and start the containers
+# Build the test image first
+echo -e "${YELLOW}Building test Docker image...${NC}"
+docker-compose -f docker-compose-test.yml build test_runner
+
+# Start MongoDB container
 echo -e "${YELLOW}Starting MongoDB test container...${NC}"
 docker-compose -f docker-compose-test.yml up -d mongodb_test
 
@@ -41,7 +45,12 @@ done
 
 # Run the tests
 echo -e "${YELLOW}Running tests...${NC}"
-docker-compose -f docker-compose-test.yml run --rm test_runner "$@"
+docker-compose -f docker-compose-test.yml run --rm \
+    -e MONGODB_TEST_URL=mongodb://mongodb_test:27017 \
+    -e MONGODB_TEST_DB=camera_collector_test \
+    -e ENVIRONMENT=test \
+    -e SECRET_KEY=test_secret_key \
+    test_runner "$@"
 TEST_EXIT_CODE=$?
 
 # Clean up
