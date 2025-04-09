@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  mongodb_test:
+    image: mongo:6.0
+    container_name: mongodb_test
+    ports:
+      - "27018:27017"  # Use a different port to avoid conflicts with dev MongoDB
+    environment:
+      - MONGO_INITDB_DATABASE=camera_collector_test
+    volumes:
+      - mongo_test_data:/data/db
+      - ./scripts/mongo-init-test.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/camera_collector_test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  # Test runner service
+  test_runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      mongodb_test:
+        condition: service_healthy
+    environment:
+      - MONGODB_TEST_URL=mongodb://mongodb_test:27017
+      - MONGODB_TEST_DB=camera_collector_test
+      - SECRET_KEY=test_secret_key
+      - ENVIRONMENT=test
+    volumes:
+      - .:/app
+      - ./reports:/app/reports
+    command: pytest -xvs --cov=camera_collector --cov-report=term-missing --cov-report=html:/app/reports/coverage
+
+volumes:
+  mongo_test_data:

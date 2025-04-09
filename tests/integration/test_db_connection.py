@@ -17,30 +17,70 @@ class TestDatabaseConnection:
     async def mongodb_client(self):
         """MongoDB client fixture."""
         # Use test database settings
-        mongo_url = settings.MONGODB_TEST_URL
+        mongo_url = os.environ.get("MONGODB_TEST_URL", settings.MONGODB_TEST_URL)
         client = AsyncIOMotorClient(mongo_url)
         yield client
         client.close()
     
-    async def test_database_connection(self, mongodb_client):
+    @pytest.mark.skipif("not config.getoption('mongodb_available')")
+    async def test_database_connection(self, mongodb_client, mongodb_available):
         """Test that we can connect to the database."""
-        # This is a basic test to ensure we can connect to MongoDB
-        # Skip this test if the server isn't available (CI environment without MongoDB)
-        try:
-            # Check that the server is responsive
-            server_info = await mongodb_client.server_info()
-            assert "version" in server_info
+        # Skip this test if MongoDB is not available
+        if not mongodb_available:
+            pytest.skip("MongoDB is not available")
             
-            # Check test database
-            db = mongodb_client[settings.MONGODB_TEST_DB]
-            # Insert and retrieve a test document
-            test_collection = db.test_collection
-            await test_collection.insert_one({"test": "data"})
-            result = await test_collection.find_one({"test": "data"})
-            assert result is not None
-            assert result["test"] == "data"
+        # Check that the server is responsive
+        server_info = await mongodb_client.server_info()
+        assert "version" in server_info
+        
+        # Check test database
+        mongo_db = os.environ.get("MONGODB_TEST_DB", settings.MONGODB_TEST_DB)
+        db = mongodb_client[mongo_db]
+        
+        # Insert and retrieve a test document
+        test_collection = db.test_collection
+        await test_collection.insert_one({"test": "data"})
+        result = await test_collection.find_one({"test": "data"})
+        assert result is not None
+        assert result["test"] == "data"
+        
+        # Clean up
+        await test_collection.delete_many({})
+    
+    async def test_collection_operations(self, mongodb, mongodb_available):
+        """Test basic collection operations."""
+        # Skip this test if MongoDB is not available
+        if not mongodb_available:
+            pytest.skip("MongoDB is not available")
             
-            # Clean up
-            await test_collection.delete_many({})
-        except Exception as e:
-            pytest.skip(f"MongoDB is not available: {str(e)}")
+        # Insert a document
+        await mongodb.cameras.insert_one({
+            "brand": "Test Brand",
+            "model": "Test Model",
+            "year_manufactured": 2020,
+            "type": "SLR",
+            "film_format": "35mm",
+            "condition": "excellent"
+        })
+        
+        # Find the document
+        result = await mongodb.cameras.find_one({"brand": "Test Brand"})
+        assert result is not None
+        assert result["model"] == "Test Model"
+        
+        # Update the document
+        await mongodb.cameras.update_one(
+            {"brand": "Test Brand"},
+            {"$set": {"condition": "mint"}}
+        )
+        
+        # Verify the update
+        updated = await mongodb.cameras.find_one({"brand": "Test Brand"})
+        assert updated["condition"] == "mint"
+        
+        # Delete the document
+        await mongodb.cameras.delete_one({"brand": "Test Brand"})
+        
+        # Verify deletion
+        deleted = await mongodb.cameras.find_one({"brand": "Test Brand"})
+        assert deleted is None

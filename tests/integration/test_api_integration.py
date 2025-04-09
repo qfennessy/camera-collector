@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 import os
 from typing import Dict, Any
 import uuid
+import asyncio
 
 from camera_collector.main import app
 from camera_collector.db.database import connect_to_mongodb, close_mongodb_connection
@@ -14,108 +15,118 @@ from camera_collector.db.repositories.user_repository import UserRepository
 from camera_collector.db.database import db
 
 
-# Skip this integration test if MongoDB is not available
-pytestmark = pytest.mark.skip("Integration tests require MongoDB setup")
-
-
-@pytest.fixture(scope="module")
-async def setup_db():
-    """Set up the database connection for testing."""
-    await connect_to_mongodb()
-    yield
-    await close_mongodb_connection()
-
-
-@pytest.fixture
-def test_client(setup_db):
-    """Test client with real database."""
-    with TestClient(app) as client:
-        yield client
-
-
-@pytest.fixture
-async def auth_service():
-    """Create a real auth service for testing."""
-    user_repo = UserRepository(db.db)
-    return AuthService(user_repo)
-
-
-@pytest.fixture
-async def test_user(auth_service) -> Dict[str, Any]:
-    """Create a test user and return user data."""
-    user_data = UserCreate(
-        username="testuser",
-        email="test@example.com",
-        password="password123"
-    )
-    
-    # Try to create user if it doesn't exist
-    try:
-        user = await auth_service.register_user(user_data)
-        return {
-            "id": user.id,
-            "username": user.username,
-            "email": user.email
-        }
-    except Exception:
-        # User might already exist, try to authenticate instead
-        tokens = await auth_service.login(user_data.username, user_data.password)
-        return {
-            "username": user_data.username,
-            "email": user_data.email,
-            "access_token": tokens.access_token
-        }
-
-
-@pytest_asyncio.fixture
-async def auth_header(test_client, test_user):
-    """Get authentication header with valid token."""
-    login_response = test_client.post(
-        "/api/auth/login",
-        data={
-            "username": test_user["username"],
-            "password": "password123"
-        }
-    )
-    access_token = login_response.json()["access_token"]
-    return {"Authorization": f"Bearer {access_token}"}
-
-
-@pytest_asyncio.fixture
-async def test_camera(test_client, auth_header):
-    """Create a test camera and return its data."""
-    camera_data = {
-        "brand": "Test Brand",
-        "model": "Test Model",
-        "year_manufactured": 2000,
-        "type": "Test Type",
-        "film_format": "35mm",
-        "condition": "excellent"
-    }
-    
-    create_response = test_client.post(
-        "/api/cameras",
-        json=camera_data,
-        headers=auth_header
-    )
-    
-    camera = create_response.json()
-    yield camera
-    
-    # Clean up - delete the camera
-    test_client.delete(
-        f"/api/cameras/{camera['id']}",
-        headers=auth_header
-    )
-
-
-@pytest.mark.asyncio
+# Mark these tests as integration tests that require MongoDB
 @pytest.mark.integration
 class TestAPIIntegration:
     """Integration tests for the API."""
     
-    async def test_register_and_login(self, test_client):
+    @pytest.fixture(scope="class")
+    async def setup_db(self, mongodb_available):
+        """Set up the database connection for testing."""
+        if not mongodb_available:
+            return
+            
+        # Connect to MongoDB if needed for non-Docker testing
+        if 'ENVIRONMENT' not in os.environ or os.environ['ENVIRONMENT'] != 'test':
+            await connect_to_mongodb()
+            yield
+            await close_mongodb_connection()
+        else:
+            # In Docker environment, connection is managed by the container
+            yield
+    
+    @pytest.fixture
+    def test_client(self, setup_db):
+        """Test client with real database."""
+        with TestClient(app) as client:
+            yield client
+    
+    @pytest.fixture
+    async def auth_service(self, mongodb):
+        """Create an auth service for testing."""
+        user_repo = UserRepository(mongodb)
+        return AuthService(user_repo)
+    
+    @pytest.fixture
+    async def test_user(self, auth_service, mongodb_available) -> Dict[str, Any]:
+        """Create a test user and return user data."""
+        if not mongodb_available:
+            pytest.skip("MongoDB is not available")
+            
+        user_data = UserCreate(
+            username="testuser",
+            email="test@example.com",
+            password="password123"
+        )
+        
+        # Try to create user if it doesn't exist
+        try:
+            user = await auth_service.register_user(user_data)
+            return {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email
+            }
+        except Exception:
+            # User might already exist, try to authenticate instead
+            tokens = await auth_service.login(user_data.username, user_data.password)
+            return {
+                "username": user_data.username,
+                "email": user_data.email,
+                "access_token": tokens.access_token
+            }
+    
+    @pytest.fixture
+    async def auth_header(self, test_client, test_user, mongodb_available):
+        """Get authentication header with valid token."""
+        if not mongodb_available:
+            pytest.skip("MongoDB is not available")
+            
+        login_response = test_client.post(
+            "/api/auth/login",
+            data={
+                "username": test_user["username"],
+                "password": "password123"
+            }
+        )
+        access_token = login_response.json()["access_token"]
+        return {"Authorization": f"Bearer {access_token}"}
+    
+    @pytest.fixture
+    async def test_camera(self, test_client, auth_header, mongodb_available):
+        """Create a test camera and return its data."""
+        if not mongodb_available:
+            pytest.skip("MongoDB is not available")
+            
+        camera_data = {
+            "brand": "Test Brand",
+            "model": "Test Model",
+            "year_manufactured": 2000,
+            "type": "Test Type",
+            "film_format": "35mm",
+            "condition": "excellent"
+        }
+        
+        create_response = test_client.post(
+            "/api/cameras",
+            json=camera_data,
+            headers=auth_header
+        )
+        
+        camera = create_response.json()
+        yield camera
+        
+        # Clean up - delete the camera
+        test_client.delete(
+            f"/api/cameras/{camera['id']}",
+            headers=auth_header
+        )
+    
+    async def test_register_and_login(self, test_client, mongodb_available):
         """Test registering a new user and logging in."""
+        if not mongodb_available:
+            pytest.skip("MongoDB is not available")
+            
         # Generate a unique username and email
         unique_id = str(uuid.uuid4())[:8]
         username = f"testuser_{unique_id}"
@@ -152,8 +163,11 @@ class TestAPIIntegration:
         assert "access_token" in token_data
         assert "refresh_token" in token_data
     
-    async def test_create_and_get_camera(self, test_client, auth_header):
+    async def test_create_and_get_camera(self, test_client, auth_header, mongodb_available):
         """Test creating and retrieving a camera."""
+        if not mongodb_available:
+            pytest.skip("MongoDB is not available")
+            
         # Create a camera
         camera_data = {
             "brand": "Test Brand",
@@ -196,8 +210,11 @@ class TestAPIIntegration:
         )
         assert delete_response.status_code == 204
     
-    async def test_update_camera(self, test_client, auth_header, test_camera):
+    async def test_update_camera(self, test_client, auth_header, test_camera, mongodb_available):
         """Test updating a camera."""
+        if not mongodb_available:
+            pytest.skip("MongoDB is not available")
+            
         # Update camera data
         update_data = {
             "condition": "good",
@@ -220,8 +237,11 @@ class TestAPIIntegration:
         assert updated_camera["brand"] == test_camera["brand"]
         assert updated_camera["model"] == test_camera["model"]
     
-    async def test_list_cameras(self, test_client, auth_header, test_camera):
+    async def test_list_cameras(self, test_client, auth_header, test_camera, mongodb_available):
         """Test listing cameras with pagination."""
+        if not mongodb_available:
+            pytest.skip("MongoDB is not available")
+            
         # Get cameras with default pagination
         list_response = test_client.get(
             "/api/cameras",
@@ -254,8 +274,11 @@ class TestAPIIntegration:
         pagination_result = pagination_response.json()
         assert pagination_result["size"] == 5
     
-    async def test_camera_statistics(self, test_client, auth_header, test_camera):
+    async def test_camera_statistics(self, test_client, auth_header, test_camera, mongodb_available):
         """Test camera statistics endpoints."""
+        if not mongodb_available:
+            pytest.skip("MongoDB is not available")
+            
         # Test brand statistics
         brand_stats_response = test_client.get(
             "/api/stats/brands",
@@ -292,8 +315,11 @@ class TestAPIIntegration:
         value_data = value_response.json()
         assert "total_value" in value_data
     
-    async def test_token_refresh(self, test_client, auth_header):
+    async def test_token_refresh(self, test_client, auth_header, mongodb_available):
         """Test token refresh functionality."""
+        if not mongodb_available:
+            pytest.skip("MongoDB is not available")
+            
         # Login to get refresh token
         login_response = test_client.post(
             "/api/auth/login",
@@ -317,8 +343,11 @@ class TestAPIIntegration:
         assert "access_token" in token_data
         assert "refresh_token" in token_data
     
-    async def test_invalid_auth(self, test_client):
+    async def test_invalid_auth(self, test_client, mongodb_available):
         """Test invalid authentication."""
+        if not mongodb_available:
+            pytest.skip("MongoDB is not available")
+            
         # Try to access protected endpoint without token
         no_token_response = test_client.get("/api/cameras")
         assert no_token_response.status_code == 401

@@ -116,14 +116,23 @@ These areas are challenging to test without a real MongoDB instance, but the moc
    - Set up GitHub Actions for continuous testing
    - Add coverage reporting to CI/CD pipeline
 
-2. **Improve Repository Coverage**:
-   - Set up a MongoDB container for integration tests
-   - Implement more integration tests for repository operations
+2. **MongoDB Container for Testing** (Added Plan):
+   - Set up a dedicated MongoDB container for local testing
+   - Create a docker-compose-test.yml file for test environment
+   - Update test fixtures to use this containerized database
+   - Implement environment detection to switch between mock and real database
+   - Add cleanup procedures to reset database state between test runs
 
-3. **Property-Based Testing**:
+3. **Improve Repository Coverage**:
+   - Enable integration tests with the MongoDB container
+   - Implement comprehensive integration tests for all repository operations
+   - Add database seeding scripts for test data
+   - Aim to increase repository coverage to at least 80%
+
+4. **Property-Based Testing**:
    - Consider adding property-based tests with Hypothesis
    - Focus on data validation and schema testing
 
-4. **Performance Testing**:
+5. **Performance Testing**:
    - Add performance tests for critical endpoints
    - Measure and optimize response times
