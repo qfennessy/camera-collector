@@ -32,6 +32,5 @@ COPY . /app/
 # Create directory for test reports
 RUN mkdir -p /app/reports
 
-# Set the entrypoint to run tests
-ENTRYPOINT ["pytest"]
-CMD ["-xvs", "--cov=camera_collector", "--cov-report=term-missing"]
+# Don't set entrypoint to allow flexibility in command parameters
+CMD ["pytest", "-xvs", "--cov=camera_collector", "--cov-report=term-missing"]

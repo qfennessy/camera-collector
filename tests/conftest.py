@@ -55,7 +55,7 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
     loop.close()
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 async def mongodb():
     """
     Create a MongoDB test database if available, otherwise return a mock.
@@ -68,28 +68,30 @@ async def mongodb():
         mock_db = AsyncMock()
         mock_db.cameras = AsyncMock()
         mock_db.users = AsyncMock()
+        mock_db.cameras.delete_many = AsyncMock()
+        mock_db.users.delete_many = AsyncMock()
         yield mock_db
-        return
-    
-    # Use real MongoDB
-    mongo_url = os.environ.get("MONGODB_TEST_URL", settings.MONGODB_TEST_URL)
-    mongo_db = os.environ.get("MONGODB_TEST_DB", settings.MONGODB_TEST_DB)
-    
-    # Create a real client
-    client = AsyncIOMotorClient(mongo_url)
-    db = client[mongo_db]
-    
-    # Clear collections before tests
-    await db.cameras.delete_many({})
-    await db.users.delete_many({})
-    
-    # Yield the database object
-    yield db
-    
-    # Clean up after tests
-    await db.cameras.delete_many({})
-    await db.users.delete_many({})
-    client.close()
+    else:
+        # Use real MongoDB
+        mongo_url = os.environ.get("MONGODB_TEST_URL", settings.MONGODB_TEST_URL)
+        mongo_db = os.environ.get("MONGODB_TEST_DB", settings.MONGODB_TEST_DB)
+        
+        # Create a real client
+        client = AsyncIOMotorClient(mongo_url)
+        db = client[mongo_db]
+        
+        # Clear collections before tests
+        await db.cameras.delete_many({})
+        await db.users.delete_many({})
+        
+        try:
+            # Return the database object
+            yield db
+        finally:
+            # Clean up after tests
+            await db.cameras.delete_many({})
+            await db.users.delete_many({})
+            client.close()
 
 
 @pytest.fixture(scope="class")

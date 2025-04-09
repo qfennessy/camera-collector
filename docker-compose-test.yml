@@ -32,7 +32,7 @@ services:
     volumes:
       - .:/app
       - ./reports:/app/reports
-    command: pytest -xvs --cov=camera_collector --cov-report=term-missing --cov-report=html:/app/reports/coverage
+    # Command is provided by run_tests.sh, no need to specify it here
 
 volumes:
   mongo_test_data:

@@ -50,7 +50,7 @@ docker-compose -f docker-compose-test.yml run --rm \
     -e MONGODB_TEST_DB=camera_collector_test \
     -e ENVIRONMENT=test \
     -e SECRET_KEY=test_secret_key \
-    test_runner "$@"
+    test_runner pytest -xvs --cov=camera_collector --cov-report=term-missing --cov-report=html:/app/reports/coverage "$@"
 TEST_EXIT_CODE=$?
 
 # Clean up
