@@ -22,8 +22,9 @@ async def mongodb():
     client = AsyncIOMotorClient(mongo_url)
     db = client[mongo_db]
     
+    # Return the database object directly
     yield db
     
     # Clean up
-    client.drop_database(mongo_db)
+    await client.drop_database(mongo_db)
     client.close()
