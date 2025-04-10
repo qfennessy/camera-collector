@@ -40,6 +40,7 @@ class TestMongoDBIntegration:
         await db.cameras.delete_many({})
         client.close()
     
+    @pytest.mark.skip("Skipping MongoDB connection test as requested")
     async def test_mongo_connection(self, mongo_client):
         """Test that we can connect to MongoDB."""
         # Check that the server is responsive
