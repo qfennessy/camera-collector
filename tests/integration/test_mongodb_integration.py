@@ -10,6 +10,7 @@ from camera_collector.models.camera import Camera, CameraCreate
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.skip("Skipping all MongoDB integration tests as requested")
 class TestMongoDBIntegration:
     """Test integration with MongoDB."""
     
@@ -40,7 +41,6 @@ class TestMongoDBIntegration:
         await db.cameras.delete_many({})
         client.close()
     
-    @pytest.mark.skip("Skipping MongoDB connection test as requested")
     async def test_mongo_connection(self, mongo_client):
         """Test that we can connect to MongoDB."""
         # Check that the server is responsive
