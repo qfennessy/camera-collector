@@ -12,7 +12,27 @@ from camera_collector.core.exceptions import AuthenticationError
 
 
 # Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Use fewer rounds in test environment for speed
+import os
+bcrypt_rounds = int(os.environ.get("BCRYPT_ROUNDS", 12))
+
+# Configure bcrypt with fewer rounds for testing
+try:
+    # Fix for bcrypt compatibility issues
+    import bcrypt
+    # Test if bcrypt is working correctly
+    test_hash = bcrypt.hashpw(b"test", bcrypt.gensalt(rounds=4))
+    # Use our tested bcrypt backend
+    pwd_context = CryptContext(
+        schemes=["bcrypt"], 
+        deprecated="auto",
+        bcrypt__rounds=bcrypt_rounds,
+        bcrypt__ident="2b"
+    )
+except Exception as e:
+    print(f"Warning: Using bcrypt without custom rounds due to compatibility issue: {e}")
+    # Fallback to default settings
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2 token URL
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_PREFIX}/auth/login")

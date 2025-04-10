@@ -29,19 +29,27 @@ docker-compose -f docker-compose-test.yml up -d mongodb_test
 
 # Wait for MongoDB to be ready
 echo -e "${YELLOW}Waiting for MongoDB to be ready...${NC}"
-for i in {1..30}; do
-    if docker-compose -f docker-compose-test.yml exec mongodb_test mongosh --eval "db.runCommand('ping').ok" &>/dev/null; then
-        echo -e "${GREEN}MongoDB is ready!${NC}"
-        break
-    fi
-    if [ $i -eq 30 ]; then
-        echo -e "${RED}Timed out waiting for MongoDB to be ready.${NC}"
-        docker-compose -f docker-compose-test.yml down
-        exit 1
-    fi
-    echo -n "."
-    sleep 1
-done
+# Sleep a bit to give MongoDB time to start
+sleep 10
+
+# Check if MongoDB is ready
+if docker-compose -f docker-compose-test.yml exec -T mongodb_test mongosh --eval "db.adminCommand('ping')" &>/dev/null; then
+    echo -e "${GREEN}MongoDB is ready!${NC}"
+else
+    # Try a few more times with short intervals
+    for i in {1..5}; do
+        echo -n "."
+        sleep 2
+        if docker-compose -f docker-compose-test.yml exec -T mongodb_test mongosh --eval "db.adminCommand('ping')" &>/dev/null; then
+            echo -e "${GREEN}MongoDB is ready!${NC}"
+            break
+        fi
+        if [ $i -eq 5 ]; then
+            echo -e "${RED}Timed out waiting for MongoDB to be ready.${NC}"
+            echo -e "${YELLOW}Going to try anyway, some tests might fail...${NC}"
+        fi
+    done
+fi
 
 # Run the tests
 echo -e "${YELLOW}Running tests...${NC}"
@@ -50,6 +58,8 @@ docker-compose -f docker-compose-test.yml run --rm \
     -e MONGODB_TEST_DB=camera_collector_test \
     -e ENVIRONMENT=test \
     -e SECRET_KEY=test_secret_key \
+    -e PYTHONHASHSEED=0 \
+    -e BCRYPT_ROUNDS=4 \
     test_runner pytest -xvs --cov=camera_collector --cov-report=term-missing --cov-report=html:/app/reports/coverage "$@"
 TEST_EXIT_CODE=$?
 

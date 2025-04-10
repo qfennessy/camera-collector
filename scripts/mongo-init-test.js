@@ -16,14 +16,26 @@ db.users.createIndex({ "username": 1 }, { unique: true });
 db.users.createIndex({ "email": 1 }, { unique: true });
 
 // Create an admin user for testing
-db.users.insertOne({
-  username: "admin_test",
-  email: "admin_test@example.com",
-  hashed_password: "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW", // "password"
-  is_active: true,
-  created_at: new Date(),
-  updated_at: new Date()
-});
+// We'll use multiple hash formats for "password123" to ensure compatibility
+// The application will need to generate a compatible hash during testing
+db.users.insertMany([
+  {
+    username: "testuser",
+    email: "test@example.com",
+    hashed_password: "$2a$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW", // "password123" format $2a$
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date()
+  },
+  {
+    username: "testuser2",
+    email: "test2@example.com",
+    hashed_password: "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW", // "password123" format $2b$
+    is_active: true,
+    created_at: new Date(),
+    updated_at: new Date()
+  }
+]);
 
 // Insert sample cameras for testing
 db.cameras.insertMany([
@@ -44,33 +56,33 @@ db.cameras.insertMany([
     updated_at: new Date()
   },
   {
-    brand: "Leica",
-    model: "M3",
-    year_manufactured: 1954,
-    type: "rangefinder",
+    brand: "Canon",
+    model: "AE-1",
+    year_manufactured: 1976,
+    type: "SLR",
     film_format: "35mm",
     condition: "good",
-    special_features: ["double stroke"],
-    notes: "Iconic rangefinder camera",
+    special_features: ["program mode"],
+    notes: "Popular student camera",
     acquisition_date: new Date("2022-11-10"),
-    acquisition_price: 1200.00,
-    estimated_value: 1500.00,
+    acquisition_price: 200.00,
+    estimated_value: 250.00,
     images: [],
     created_at: new Date(),
     updated_at: new Date()
   },
   {
-    brand: "Hasselblad",
-    model: "500C/M",
-    year_manufactured: 1970,
-    type: "medium format",
-    film_format: "120",
-    condition: "excellent",
-    special_features: ["interchangeable backs"],
-    notes: "Professional medium format camera",
-    acquisition_date: new Date("2023-02-20"),
-    acquisition_price: 1800.00,
-    estimated_value: 2000.00,
+    brand: "Leica",
+    model: "M3",
+    year_manufactured: 1954,
+    type: "rangefinder",
+    film_format: "35mm",
+    condition: "mint",
+    special_features: ["double stroke"],
+    notes: "Iconic rangefinder camera",
+    acquisition_date: new Date("2022-11-10"),
+    acquisition_price: 1200.00,
+    estimated_value: 1500.00,
     images: [],
     created_at: new Date(),
     updated_at: new Date()

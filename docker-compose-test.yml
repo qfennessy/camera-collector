@@ -6,14 +6,17 @@ services:
       - "27018:27017"  # Use a different port to avoid conflicts with dev MongoDB
     environment:
       - MONGO_INITDB_DATABASE=camera_collector_test
+      - MONGO_INITDB_ROOT_USERNAME=testuser
+      - MONGO_INITDB_ROOT_PASSWORD=testpassword
     volumes:
       - mongo_test_data:/data/db
       - ./scripts/mongo-init-test.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    command: --wiredTigerCacheSizeGB 0.25 --noauth
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/camera_collector_test --quiet
-      interval: 10s
-      timeout: 10s
-      retries: 5
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
       start_period: 10s
 
   # Test runner service
@@ -25,10 +28,15 @@ services:
       mongodb_test:
         condition: service_healthy
     environment:
+      - MONGODB_URL=mongodb://mongodb_test:27017
+      - MONGODB_DB=camera_collector_test
       - MONGODB_TEST_URL=mongodb://mongodb_test:27017
       - MONGODB_TEST_DB=camera_collector_test
       - SECRET_KEY=test_secret_key
       - ENVIRONMENT=test
+      - DEBUG=True
+      - BCRYPT_ROUNDS=4  # Use fewer rounds for faster tests
+      - PYTHONHASHSEED=0  # For consistent hashing
     volumes:
       - .:/app
       - ./reports:/app/reports
