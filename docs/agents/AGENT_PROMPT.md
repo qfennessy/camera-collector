@@ -74,6 +74,27 @@ When adding new features:
 6. Ensure backward compatibility
 7. Consider cross-cutting concerns like security
 
+## Documentation Generation
+
+When tasked with creating new documentation files, such as `TESTING.md`, follow these guidelines:
+
+### Creating TESTING.md
+
+1.  **Analyze Project Context**: Review the project's testing setup. Examine the `tests/` directory, `conftest.py`, dependency files (`pyproject.toml`, `requirements.txt`), and any existing CI/CD configurations related to testing.
+2.  **Identify Core Components**: Determine the primary testing framework (e.g., pytest, unittest), key libraries (e.g., `pytest-asyncio`, `mock`), and test runners.
+3.  **Structure**: Organize the document logically, covering standard topics:
+    *   Testing Philosophy/Strategy
+    *   Framework and Tools
+    *   Test Structure and Location
+    *   Types of Tests (Unit, Integration, E2E, etc.)
+    *   Fixtures and Test Data Management
+    *   Mocking Strategy
+    *   Running Tests (Commands)
+    *   Code Coverage Goals and Reporting
+    *   Best Practices
+4.  **Content**: Populate sections with project-specific details where possible (e.g., actual commands to run tests, specific fixture usage patterns). If details aren't available, describe general best practices relevant to the project's stack.
+5.  **Consistency**: Ensure the style, tone, and formatting are consistent with other documentation files within the project (e.g., `ARCHITECTURE.md`, `API.md`).
+
 ## Commands Reference
 
 - Setup: `poetry install --with dev`
