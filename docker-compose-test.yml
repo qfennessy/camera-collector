@@ -11,13 +11,13 @@ services:
     volumes:
       - mongo_test_data:/data/db
       - ./scripts/mongo-init-test.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
-    command: --wiredTigerCacheSizeGB 0.25 --noauth
+    command: --wiredTigerCacheSizeGB 0.25
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
+      test: ["CMD", "mongosh", "--username", "testuser", "--password", "testpassword", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
 
   # Test runner service
   test_runner:
@@ -28,9 +28,9 @@ services:
       mongodb_test:
         condition: service_healthy
     environment:
-      - MONGODB_URL=mongodb://mongodb_test:27017
+      - MONGODB_URL=mongodb://testuser:testpassword@mongodb_test:27017/camera_collector_test?authSource=admin
       - MONGODB_DB=camera_collector_test
-      - MONGODB_TEST_URL=mongodb://mongodb_test:27017
+      - MONGODB_TEST_URL=mongodb://testuser:testpassword@mongodb_test:27017/camera_collector_test?authSource=admin
       - MONGODB_TEST_DB=camera_collector_test
       - SECRET_KEY=test_secret_key
       - ENVIRONMENT=test

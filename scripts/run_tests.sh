@@ -23,6 +23,10 @@ mkdir -p reports
 echo -e "${YELLOW}Building test Docker image...${NC}"
 docker-compose -f docker-compose-test.yml build test_runner
 
+# Clean up any existing containers
+echo -e "${YELLOW}Cleaning up any existing containers...${NC}"
+docker-compose -f docker-compose-test.yml down --remove-orphans
+
 # Start MongoDB container
 echo -e "${YELLOW}Starting MongoDB test container...${NC}"
 docker-compose -f docker-compose-test.yml up -d mongodb_test
@@ -30,21 +34,21 @@ docker-compose -f docker-compose-test.yml up -d mongodb_test
 # Wait for MongoDB to be ready
 echo -e "${YELLOW}Waiting for MongoDB to be ready...${NC}"
 # Sleep a bit to give MongoDB time to start
-sleep 10
+sleep 20
 
 # Check if MongoDB is ready
-if docker-compose -f docker-compose-test.yml exec -T mongodb_test mongosh --eval "db.adminCommand('ping')" &>/dev/null; then
+if docker-compose -f docker-compose-test.yml exec -T mongodb_test mongosh --username testuser --password testpassword --authenticationDatabase admin --eval "db.adminCommand('ping')" &>/dev/null; then
     echo -e "${GREEN}MongoDB is ready!${NC}"
 else
     # Try a few more times with short intervals
-    for i in {1..5}; do
+    for i in {1..10}; do
         echo -n "."
-        sleep 2
-        if docker-compose -f docker-compose-test.yml exec -T mongodb_test mongosh --eval "db.adminCommand('ping')" &>/dev/null; then
+        sleep 3
+        if docker-compose -f docker-compose-test.yml exec -T mongodb_test mongosh --username testuser --password testpassword --authenticationDatabase admin --eval "db.adminCommand('ping')" &>/dev/null; then
             echo -e "${GREEN}MongoDB is ready!${NC}"
             break
         fi
-        if [ $i -eq 5 ]; then
+        if [ $i -eq 10 ]; then
             echo -e "${RED}Timed out waiting for MongoDB to be ready.${NC}"
             echo -e "${YELLOW}Going to try anyway, some tests might fail...${NC}"
         fi
@@ -54,7 +58,7 @@ fi
 # Run the tests
 echo -e "${YELLOW}Running tests...${NC}"
 docker-compose -f docker-compose-test.yml run --rm \
-    -e MONGODB_TEST_URL=mongodb://mongodb_test:27017 \
+    -e MONGODB_TEST_URL=mongodb://testuser:testpassword@mongodb_test:27017/camera_collector_test?authSource=admin \
     -e MONGODB_TEST_DB=camera_collector_test \
     -e ENVIRONMENT=test \
     -e SECRET_KEY=test_secret_key \

@@ -1,0 +1,97 @@
+Prompt for Generating an Architecture Document (ARCHITECTURE.md)
+
+  Create a comprehensive architecture document for our [Project Name] system. The document should include:
+
+  1. A detailed system overview section describing all major components
+  2. A system interaction diagram showing how components connect
+  3. A technology stack overview in tabular format
+  4. For each major component (Backend, CLI, UI):
+     - Key architectural layers and their responsibilities
+     - A component diagram showing internal structure
+     - Directory structure with purpose explanations
+     - Key architectural patterns with code examples
+     - Authentication and data flow explanations
+     - Configuration management approach
+     - Logging architecture
+     - Performance and scalability considerations
+
+  5. Cross-cutting concerns that span components
+  6. Future architecture considerations and expansion plans
+  7. Debugging and development guidelines
+  8. Utility and helper components
+  9. An appendix with:
+     - A glossary of terms
+     - Common development tasks
+     - Environment compatibility matrix
+     - Contribution guidelines
+
+  Format the document with proper markdown, including tables, code blocks, and ASCII diagrams where appropriate. Include a
+  table of contents with anchors.
+
+  Prompt for Generating an Environments Document (ENVIRONMENTS.md)
+
+  Create a comprehensive environments guide for our [Project Name] system. The document should include:
+
+  1. An environment overview section with a table showing all environments (development, production, etc.)
+  2. For each environment:
+     - Detailed configuration information
+     - Usage guidelines (what the environment should be used for)
+     - Access control details
+     - Specific environment variables
+
+  3. An environment compatibility matrix showing which components work in which environments
+  4. Instructions for working with multiple environments, including:
+     - Profile system usage
+     - Environment variable configuration
+     - Configuration file locations
+
+  5. A list of all environment-related configuration files with their locations and purpose
+
+  Format the document with proper markdown, including tables where appropriate. Include a table of contents with anchors.
+  Focus on practical information that would help developers work with different environments.
+
+  Prompt for Generating an API Documentation (API.md)
+
+  Create a comprehensive API documentation for our [Project Name] system. The document should include:
+
+  1. An API overview section covering:
+     - Base URL structure
+     - Authentication method
+     - Content types
+     - Versioning approach
+     - Health check endpoints
+
+  2. Detailed information on the authentication flow and endpoints
+  3. Explanation of tenant context and how it's used throughout the API
+  4. For each resource type (e.g., People, Relationships, Facts, Stories, Events, Locations):
+     - A table listing all endpoints with HTTP methods, descriptions, and auth requirements
+     - Request and response models with types using code blocks
+     - Detailed explanations of key endpoints with example URLs and query parameters
+
+  5. A section on batch operations and webhooks
+  6. Error handling approach, including:
+     - Standardized error format
+     - Common error types
+     - HTTP status codes
+
+  7. Description of the middleware stack
+  8. Common query parameters
+  9. Headers used by the API
+
+  Format the document with proper markdown, including tables and code blocks where appropriate. Use Python-style model
+  definitions for clarity.
+
+  Recommendations for Improvement
+
+  Based on my analysis, here are recommendations to improve these documentation files:
+
+  1. Add implementation examples: Include more code examples showing how to implement key architectural patterns.
+  2. Include diagrams: Replace ASCII diagrams with actual images/diagrams using tools like Mermaid or PlantUML.
+  3. Add decision records section: Develop more detailed Architecture Decision Records (ADRs) for key architectural choices.
+  4. Create interactive elements: Add links to interactive documentation like Swagger UI.
+  5. Include versioning history: Add a section tracking major document changes over time.
+  6. Expand troubleshooting guides: Add more comprehensive troubleshooting sections with common issues and solutions.
+  7. Add security considerations: Expand sections on security, particularly for API authentication and data protection.
+  8. Include performance benchmarks: Add expected performance metrics and benchmarks.
+  9. Create integration guides: Add specific guides for integrating with third-party systems.
+  10. Reference real-world examples: Include references to existing implementations that demonstrate best practices.
